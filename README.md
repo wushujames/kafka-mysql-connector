@@ -8,11 +8,12 @@ As of today (2015-10-15), Copycat has not been released in any official version 
 
 Instructions for building
 -------------------------
-1. Pull down Kafka trunk.
-    git clone https://github.com/apache/kafka kafka
-    
-2. Build kafka and place jars in local maven repo
-    (cd kafka && ./gradlew install)
+1.  Pull down Kafka trunk.
+    ```
+    $ git clone https://github.com/apache/kafka kafka
+    ```
+2.  Build kafka and place jars in local maven repo
+    $ (cd kafka && ./gradlew install)
 
 3. Pull this repo down and build it
     ```
@@ -22,7 +23,7 @@ Instructions for building
     
 Instructions for running
 ------------------------
-1. Run zookeeper somehow.
+1.  Run zookeeper somehow.
     Here are instructions on how to run it using docker.
     $ docker run -d --name zookeeper -p 2181:2181 confluent/zookeeper
     

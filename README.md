@@ -13,8 +13,9 @@ Instructions for building
     $ git clone https://github.com/apache/kafka kafka
     ```
 2.  Build kafka and place jars in local maven repo
+    ```
     $ (cd kafka && ./gradlew install)
-
+    ```
 3. Pull this repo down and build it
     ```
     $ git clone https://[path] copycat-file
@@ -24,19 +25,29 @@ Instructions for building
 Instructions for running
 ------------------------
 1.  Run zookeeper somehow.
+    ```
     Here are instructions on how to run it using docker.
     $ docker run -d --name zookeeper -p 2181:2181 confluent/zookeeper
+    ```
     
 2. Run the trunk version of Kafka.
+    ```
     $ (cd kafka && ./bin/kafka-server-start.sh config/server.properties)
+    ```
     
 3. Run your copycat plugin
+    ```
     $ export CLASSPATH=/path/to/copycat-file/build/libs/copycat-file.jar
     $ kafka/bin/copycat-standalone.sh copycat-file/copycat-standalone.properties  copycat-file/copycat-file-source.properties
+    ```
     
 4. Write stuff to test.txt (that is the that this connector will read from, as configured in copycat-file-source.properties)
+    ```
     $ echo `date` >> test.txt
+    ```
     
 5. Read the data out from the kafka topic named 'test' (that is the that this connector will write to, as configured in copycat-file-source.properties)
+    ```
     $ kafka/bin/kafka-console-consumer.sh  --zookeeper 10.100.222.31:2181 --topic test
     {"schema":{"type":"string","optional":false},"payload":"Thu Oct 15 23:03:15 PDT 2015"}
+    ```

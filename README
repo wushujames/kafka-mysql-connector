@@ -34,3 +34,4 @@ Instructions for running
     
 5. Read the data out from the kafka topic named 'test' (that is the that this connector will write to, as configured in copycat-file-source.properties)
     $ kafka/bin/kafka-console-consumer.sh  --zookeeper 10.100.222.31:2181 --topic test
+    {"schema":{"type":"string","optional":false},"payload":"Thu Oct 15 23:03:15 PDT 2015"}

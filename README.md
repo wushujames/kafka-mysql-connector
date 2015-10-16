@@ -9,9 +9,8 @@ As of today (2015-10-15), Copycat has not been released in any official version 
 Instructions for building
 -------------------------
 1. Pull down Kafka trunk.
-    ```
     $ git clone https://github.com/apache/kafka kafka
-    ```
+
 2. Build kafka and place jars in local maven repo
     ```
     $ (cd kafka && ./gradlew install)

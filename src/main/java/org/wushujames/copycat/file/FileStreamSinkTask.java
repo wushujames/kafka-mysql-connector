@@ -15,7 +15,7 @@
  * limitations under the License.
  **/
 
-package org.apache.kafka.copycat.file;
+package org.wushujames.copycat.file;
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;

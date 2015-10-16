@@ -32,7 +32,7 @@ test {
 }
 
 javadoc {
-    include "**/org/apache/kafka/copycat/*"
+    include "**/org/wushujames/copycat/*"
 }
 
 artifacts {

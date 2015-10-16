@@ -15,7 +15,7 @@
  * limitations under the License.
  **/
 
-package org.apache.kafka.copycat.file;
+package org.wushujames.copycat.file;
 
 import org.apache.kafka.copycat.data.Schema;
 import org.apache.kafka.copycat.errors.CopycatException;
@@ -128,6 +128,7 @@ public class FileStreamSourceTask extends SourceTask {
                         if (line != null) {
                             if (records == null)
                                 records = new ArrayList<>();
+                            line = "James is writing this:" + line;
                             records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic, VALUE_SCHEMA, line));
                         }
                         new ArrayList<SourceRecord>();

@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-
-package org.apache.kafka.copycat.file;
+package org.wushujames.copycat.file;
 
 import org.apache.kafka.copycat.connector.ConnectorContext;
 import org.apache.kafka.copycat.errors.CopycatException;

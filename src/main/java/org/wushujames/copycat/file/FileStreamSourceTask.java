@@ -26,6 +26,28 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.zendesk.maxwell.BinlogPosition;
+import com.zendesk.maxwell.Maxwell;
+import com.zendesk.maxwell.MaxwellAbstractRowsEvent;
+import com.zendesk.maxwell.MaxwellCompatibilityError;
+import com.zendesk.maxwell.MaxwellConfig;
+import com.zendesk.maxwell.MaxwellContext;
+import com.zendesk.maxwell.MaxwellLogging;
+import com.zendesk.maxwell.MaxwellMysqlStatus;
+import com.zendesk.maxwell.MaxwellReplicator;
+import com.zendesk.maxwell.producer.StdoutProducer;
+import com.zendesk.maxwell.schema.SchemaCapturer;
+import com.zendesk.maxwell.schema.SchemaStore;
+import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
+
 
 /**
  * FileStreamSourceTask reads from stdin or a file.
@@ -41,112 +63,127 @@ public class FileStreamSourceTask extends SourceTask {
     private BufferedReader reader = null;
     private char[] buffer = new char[1024];
     private int offset = 0;
-    private String topic = null;
+    private String topic = "test";
 
     private Long streamOffset;
 
+    private com.zendesk.maxwell.schema.Schema schema;
+    private MaxwellConfig config;
+    private MaxwellContext context;
+    private MaxwellReplicator replicator;
+    static final Logger LOGGER = LoggerFactory.getLogger(Maxwell.class);
+
+    
     @Override
     public void start(Properties props) {
-        filename = props.getProperty(FileStreamSourceConnector.FILE_CONFIG);
-        if (filename == null || filename.isEmpty()) {
-            stream = System.in;
-            // Tracking offset for stdin doesn't make sense
-            streamOffset = null;
-            reader = new BufferedReader(new InputStreamReader(stream));
+//        filename = props.getProperty(FileStreamSourceConnector.FILE_CONFIG);
+//        if (filename == null || filename.isEmpty()) {
+//            stream = System.in;
+//            // Tracking offset for stdin doesn't make sense
+//            streamOffset = null;
+//            reader = new BufferedReader(new InputStreamReader(stream));
+//        }
+//        topic = props.getProperty(FileStreamSourceConnector.TOPIC_CONFIG);
+//        if (topic == null)
+//            throw new CopycatException("ConsoleSourceTask config missing topic setting");
+
+        try {
+            String[] argv = new String[] {
+                    "--user=maxwell", 
+                    "--password=XXXXXX", 
+                    "--host=192.168.59.103"
+            };
+            this.config = new MaxwellConfig(argv);
+
+            if ( this.config.log_level != null )
+                MaxwellLogging.setLevel(this.config.log_level);
+
+            this.context = new MaxwellContext(this.config);
+
+            try ( Connection connection = this.context.getConnectionPool().getConnection() ) {
+                MaxwellMysqlStatus.ensureMysqlState(connection);
+
+                SchemaStore.ensureMaxwellSchema(connection);
+                SchemaStore.upgradeSchemaStoreSchema(connection);
+
+                SchemaStore.handleMasterChange(connection, context.getServerID());
+
+                if ( this.context.getInitialPosition() != null ) {
+                    LOGGER.info("Maxwell is booting, starting at " + this.context.getInitialPosition());
+                    SchemaStore store = SchemaStore.restore(connection, this.context.getServerID(), this.context.getInitialPosition());
+                    this.schema = store.getSchema();
+                } else {
+                    initFirstRun(connection);
+                }
+            } catch ( SQLException e ) {
+                LOGGER.error("Failed to connect to mysql server @ " + this.config.getConnectionURI());
+                LOGGER.error(e.getLocalizedMessage());
+                return;
+            }
+            
+            // TODO Auto-generated method stub
+            this.replicator = new MaxwellReplicator(this.schema, null /* producer */, this.context, this.context.getInitialPosition());
+            this.context.start();
+
+            this.replicator.beforeStart(); // starts open replicator
+            
+        } catch (Exception e) {
+            throw new CopycatException("Error Initializing Maxwell", e);
         }
-        topic = props.getProperty(FileStreamSourceConnector.TOPIC_CONFIG);
-        if (topic == null)
-            throw new CopycatException("ConsoleSourceTask config missing topic setting");
     }
 
+    private void initFirstRun(Connection connection) throws SQLException, IOException, SchemaSyncError {
+        LOGGER.info("Maxwell is capturing initial schema");
+        SchemaCapturer capturer = new SchemaCapturer(connection);
+        this.schema = capturer.capture();
+
+        BinlogPosition pos = BinlogPosition.capture(connection);
+        SchemaStore store = new SchemaStore(connection, this.context.getServerID(), this.schema, pos);
+        store.save();
+
+        this.context.setPosition(pos);
+    }
+
+
+    
     @Override
     public List<SourceRecord> poll() throws InterruptedException {
-        if (stream == null) {
-            try {
-                stream = new FileInputStream(filename);
-                Map<String, Object> offset = context.offsetStorageReader().offset(Collections.singletonMap(FILENAME_FIELD, filename));
-                if (offset != null) {
-                    Object lastRecordedOffset = offset.get(POSITION_FIELD);
-                    if (lastRecordedOffset != null && !(lastRecordedOffset instanceof Long))
-                        throw new CopycatException("Offset position is the incorrect type");
-                    if (lastRecordedOffset != null) {
-                        log.debug("Found previous offset, trying to skip to file offset {}", lastRecordedOffset);
-                        long skipLeft = (Long) lastRecordedOffset;
-                        while (skipLeft > 0) {
-                            try {
-                                long skipped = stream.skip(skipLeft);
-                                skipLeft -= skipped;
-                            } catch (IOException e) {
-                                log.error("Error while trying to seek to previous offset in file: ", e);
-                                throw new CopycatException(e);
-                            }
-                        }
-                        log.debug("Skipped to offset {}", lastRecordedOffset);
-                    }
-                    streamOffset = (lastRecordedOffset != null) ? (Long) lastRecordedOffset : 0L;
-                } else {
-                    streamOffset = 0L;
-                }
-                reader = new BufferedReader(new InputStreamReader(stream));
-            } catch (FileNotFoundException e) {
-                log.warn("Couldn't find file for FileStreamSourceTask, sleeping to wait for it to be created");
-                synchronized (this) {
-                    this.wait(1000);
-                }
-                return null;
-            }
-        }
 
-        // Unfortunately we can't just use readLine() because it blocks in an uninterruptible way.
-        // Instead we have to manage splitting lines ourselves, using simple backoff when no new data
-        // is available.
         try {
-            final BufferedReader readerCopy;
-            synchronized (this) {
-                readerCopy = reader;
-            }
-            if (readerCopy == null)
+            MaxwellAbstractRowsEvent event = replicator.getEvent();
+            this.context.ensurePositionThread();
+
+            if (event == null) {
                 return null;
-
-            ArrayList<SourceRecord> records = null;
-
-            int nread = 0;
-            while (readerCopy.ready()) {
-                nread = readerCopy.read(buffer, offset, buffer.length - offset);
-
-                if (nread > 0) {
-                    offset += nread;
-                    if (offset == buffer.length) {
-                        char[] newbuf = new char[buffer.length * 2];
-                        System.arraycopy(buffer, 0, newbuf, 0, buffer.length);
-                        buffer = newbuf;
-                    }
-
-                    String line;
-                    do {
-                        line = extractLine();
-                        if (line != null) {
-                            if (records == null)
-                                records = new ArrayList<>();
-                            records.add(new SourceRecord(offsetKey(filename), offsetValue(streamOffset), topic, VALUE_SCHEMA, line));
-                        }
-                        new ArrayList<SourceRecord>();
-                    } while (line != null);
-                }
             }
 
-            if (nread <= 0)
-                synchronized (this) {
-                    this.wait(1000);
-                }
+            if (event.getTable().getDatabase().getName().equals("maxwell")) {
+                return null;
+            }
 
+            ArrayList<SourceRecord> records = new ArrayList<>();
+            SourceRecord rec;
+            for (String json : event.toJSONStrings()) {
+                System.out.print("got a maxwell event!");
+                System.out.println(json);
+                rec = new SourceRecord(
+                        offsetKey("192.168.59.103"), 
+                        offsetValue(1L),
+                        topic, 
+                        VALUE_SCHEMA, 
+                        json);
+                records.add(rec);
+            }
             return records;
-        } catch (IOException e) {
-            // Underlying stream was killed, probably as a result of calling stop. Allow to return
-            // null, and driving thread will handle any shutdown if necessary.
+
+            //return records;
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
         return null;
     }
+
 
     private String extractLine() {
         int until = -1, newStart = -1;
@@ -192,8 +229,8 @@ public class FileStreamSourceTask extends SourceTask {
         }
     }
 
-    private Map<String, String> offsetKey(String filename) {
-        return Collections.singletonMap(FILENAME_FIELD, filename);
+    private Map<String, String> offsetKey(String mysqlServer) {
+        return Collections.singletonMap("host", "192.168.59.103");
     }
 
     private Map<String, Long> offsetValue(Long pos) {

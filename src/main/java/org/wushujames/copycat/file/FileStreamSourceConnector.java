@@ -30,20 +30,21 @@ import java.util.Properties;
  * sink modes via its 'mode' setting.
  */
 public class FileStreamSourceConnector extends SourceConnector {
-    public static final String TOPIC_CONFIG = "topic";
-    public static final String FILE_CONFIG = "file";
-
-    private String filename;
-    private String topic;
+//    public static final String TOPIC_CONFIG = "topic";
+//    public static final String FILE_CONFIG = "file";
+//
+//    private String filename;
+//    private String topic;
 
     @Override
     public void start(Properties props) {
-        filename = props.getProperty(FILE_CONFIG);
-        topic = props.getProperty(TOPIC_CONFIG);
-        if (topic == null || topic.isEmpty())
-            throw new CopycatException("FileStreamSourceConnector configuration must include 'topic' setting");
-        if (topic.contains(","))
-            throw new CopycatException("FileStreamSourceConnector should only have a single topic when used as a source.");
+//        filename = props.getProperty(FILE_CONFIG);
+//        topic = props.getProperty(TOPIC_CONFIG);
+//        if (topic == null || topic.isEmpty())
+//            throw new CopycatException("FileStreamSourceConnector configuration must include 'topic' setting");
+//        if (topic.contains(","))
+//            throw new CopycatException("FileStreamSourceConnector should only have a single topic when used as a source.");
+////        --user='maxwell' --password='XXXXXX' --host='192.168.59.103' --producer=stdout
     }
 
     @Override
@@ -56,9 +57,9 @@ public class FileStreamSourceConnector extends SourceConnector {
         ArrayList<Properties> configs = new ArrayList<>();
         // Only one input stream makes sense.
         Properties config = new Properties();
-        if (filename != null)
-            config.setProperty(FILE_CONFIG, filename);
-        config.setProperty(TOPIC_CONFIG, topic);
+        config.setProperty("user", "maxwell");
+        config.setProperty("password", "XXXXXX");
+        config.setProperty("host","192.168.59.103");
         configs.add(config);
         return configs;
     }

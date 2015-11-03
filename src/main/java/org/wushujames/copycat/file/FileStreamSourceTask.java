@@ -21,6 +21,7 @@ import org.apache.kafka.copycat.data.Schema;
 import org.apache.kafka.copycat.errors.CopycatException;
 import org.apache.kafka.copycat.source.SourceRecord;
 import org.apache.kafka.copycat.source.SourceTask;
+import org.apache.kafka.copycat.storage.OffsetStorageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +70,7 @@ public class FileStreamSourceTask extends SourceTask {
 
     private com.zendesk.maxwell.schema.Schema schema;
     private MaxwellConfig config;
-    private MaxwellContext context;
+    private MaxwellContext maxwellContext;
     private MaxwellReplicator replicator;
     static final Logger LOGGER = LoggerFactory.getLogger(Maxwell.class);
 
@@ -98,19 +99,19 @@ public class FileStreamSourceTask extends SourceTask {
             if ( this.config.log_level != null )
                 MaxwellLogging.setLevel(this.config.log_level);
 
-            this.context = new MaxwellContext(this.config);
+            this.maxwellContext = new MaxwellContext(this.config);
 
-            try ( Connection connection = this.context.getConnectionPool().getConnection() ) {
+            try ( Connection connection = this.maxwellContext.getConnectionPool().getConnection() ) {
                 MaxwellMysqlStatus.ensureMysqlState(connection);
 
                 SchemaStore.ensureMaxwellSchema(connection);
                 SchemaStore.upgradeSchemaStoreSchema(connection);
 
-                SchemaStore.handleMasterChange(connection, context.getServerID());
+                SchemaStore.handleMasterChange(connection, maxwellContext.getServerID());
 
-                if ( this.context.getInitialPosition() != null ) {
-                    LOGGER.info("Maxwell is booting, starting at " + this.context.getInitialPosition());
-                    SchemaStore store = SchemaStore.restore(connection, this.context.getServerID(), this.context.getInitialPosition());
+                if ( this.maxwellContext.getInitialPosition() != null ) {
+                    LOGGER.info("Maxwell is booting, starting at " + this.maxwellContext.getInitialPosition());
+                    SchemaStore store = SchemaStore.restore(connection, this.maxwellContext.getServerID(), this.maxwellContext.getInitialPosition());
                     this.schema = store.getSchema();
                 } else {
                     initFirstRun(connection);
@@ -121,9 +122,20 @@ public class FileStreamSourceTask extends SourceTask {
                 return;
             }
             
+            OffsetStorageReader offsetStorageReader = this.context.offsetStorageReader();
+            Map<String, Object> m = offsetStorageReader.offset(offsetKey());
+            BinlogPosition startAt;
+            if (m == null) {
+                System.out.println("kafka has no offsets!");
+                startAt = this.maxwellContext.getInitialPosition();
+            } else {
+                System.out.println("kafka has offsets!" + m);
+                startAt = new BinlogPosition((long) m.get(POSITION_FIELD),
+                    (String) m.get(FILENAME_FIELD));
+            }
             // TODO Auto-generated method stub
-            this.replicator = new MaxwellReplicator(this.schema, null /* producer */, this.context, this.context.getInitialPosition());
-            this.context.start();
+            this.replicator = new MaxwellReplicator(this.schema, null /* producer */, this.maxwellContext, startAt);
+            this.maxwellContext.start();
 
             this.replicator.beforeStart(); // starts open replicator
             
@@ -138,10 +150,10 @@ public class FileStreamSourceTask extends SourceTask {
         this.schema = capturer.capture();
 
         BinlogPosition pos = BinlogPosition.capture(connection);
-        SchemaStore store = new SchemaStore(connection, this.context.getServerID(), this.schema, pos);
+        SchemaStore store = new SchemaStore(connection, this.maxwellContext.getServerID(), this.schema, pos);
         store.save();
 
-        this.context.setPosition(pos);
+        this.maxwellContext.setPosition(pos);
     }
 
 
@@ -151,7 +163,7 @@ public class FileStreamSourceTask extends SourceTask {
 
         try {
             MaxwellAbstractRowsEvent event = replicator.getEvent();
-            this.context.ensurePositionThread();
+            this.maxwellContext.ensurePositionThread();
 
             if (event == null) {
                 return null;
@@ -167,8 +179,8 @@ public class FileStreamSourceTask extends SourceTask {
                 System.out.print("got a maxwell event!");
                 System.out.println(json);
                 rec = new SourceRecord(
-                        offsetKey("192.168.59.103"), 
-                        offsetValue(1L),
+                        offsetKey(), 
+                        offsetValue(event),
                         topic, 
                         VALUE_SCHEMA, 
                         json);
@@ -229,11 +241,15 @@ public class FileStreamSourceTask extends SourceTask {
         }
     }
 
-    private Map<String, String> offsetKey(String mysqlServer) {
+    private Map<String, String> offsetKey() {
         return Collections.singletonMap("host", "192.168.59.103");
     }
 
-    private Map<String, Long> offsetValue(Long pos) {
-        return Collections.singletonMap(POSITION_FIELD, pos);
+    private Map<String, Object> offsetValue(MaxwellAbstractRowsEvent event) {
+        Map<String, Object> m = new HashMap<String, Object>();
+        m.put(POSITION_FIELD, event.getHeader().getNextPosition());
+        m.put(FILENAME_FIELD, event.getBinlogFilename());
+        
+        return m;
     }
 }

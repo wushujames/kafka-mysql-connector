@@ -60,8 +60,6 @@ public class FileStreamSourceTask extends SourceTask {
     private static final Schema VALUE_SCHEMA = Schema.STRING_SCHEMA;
 
     private InputStream stream;
-    private String topic = "test";
-
     private com.zendesk.maxwell.schema.Schema schema;
     private MaxwellConfig config;
     private MaxwellContext maxwellContext;
@@ -163,6 +161,11 @@ public class FileStreamSourceTask extends SourceTask {
                 return null;
             }
 
+            String databaseName = event.getDatabase().getName();
+            String tableName = event.getTable().getName();
+            
+            String topicName = databaseName + "." + tableName;
+            
             ArrayList<SourceRecord> records = new ArrayList<>();
             SourceRecord rec;
             for (String json : event.toJSONStrings()) {
@@ -171,7 +174,7 @@ public class FileStreamSourceTask extends SourceTask {
                 rec = new SourceRecord(
                         offsetKey(), 
                         offsetValue(event),
-                        topic, 
+                        topicName, 
                         VALUE_SCHEMA, 
                         json);
                 records.add(rec);
@@ -190,14 +193,11 @@ public class FileStreamSourceTask extends SourceTask {
     @Override
     public void stop() {
         log.trace("Stopping");
-        synchronized (this) {
-            try {
-                stream.close();
-                log.trace("Closed input stream");
-            } catch (IOException e) {
-                log.error("Failed to close ConsoleSourceTask stream: ", e);
-            }
-            this.notify();
+        try {
+            this.replicator.beforeStop();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 

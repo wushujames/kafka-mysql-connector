@@ -17,6 +17,18 @@
 
 package org.wushujames.copycat.file;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
 import org.apache.kafka.copycat.data.Schema;
 import org.apache.kafka.copycat.errors.CopycatException;
 import org.apache.kafka.copycat.source.SourceRecord;
@@ -25,26 +37,14 @@ import org.apache.kafka.copycat.storage.OffsetStorageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.*;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.zendesk.maxwell.BinlogPosition;
 import com.zendesk.maxwell.Maxwell;
 import com.zendesk.maxwell.MaxwellAbstractRowsEvent;
-import com.zendesk.maxwell.MaxwellCompatibilityError;
 import com.zendesk.maxwell.MaxwellConfig;
 import com.zendesk.maxwell.MaxwellContext;
 import com.zendesk.maxwell.MaxwellLogging;
 import com.zendesk.maxwell.MaxwellMysqlStatus;
 import com.zendesk.maxwell.MaxwellReplicator;
-import com.zendesk.maxwell.producer.StdoutProducer;
 import com.zendesk.maxwell.schema.SchemaCapturer;
 import com.zendesk.maxwell.schema.SchemaStore;
 import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
@@ -59,14 +59,8 @@ public class FileStreamSourceTask extends SourceTask {
     public  static final String POSITION_FIELD = "position";
     private static final Schema VALUE_SCHEMA = Schema.STRING_SCHEMA;
 
-    private String filename;
     private InputStream stream;
-    private BufferedReader reader = null;
-    private char[] buffer = new char[1024];
-    private int offset = 0;
     private String topic = "test";
-
-    private Long streamOffset;
 
     private com.zendesk.maxwell.schema.Schema schema;
     private MaxwellConfig config;
@@ -77,25 +71,17 @@ public class FileStreamSourceTask extends SourceTask {
     
     @Override
     public void start(Properties props) {
-//        filename = props.getProperty(FileStreamSourceConnector.FILE_CONFIG);
-//        if (filename == null || filename.isEmpty()) {
-//            stream = System.in;
-//            // Tracking offset for stdin doesn't make sense
-//            streamOffset = null;
-//            reader = new BufferedReader(new InputStreamReader(stream));
-//        }
-//        topic = props.getProperty(FileStreamSourceConnector.TOPIC_CONFIG);
-//        if (topic == null)
-//            throw new CopycatException("ConsoleSourceTask config missing topic setting");
-
         try {
             OffsetStorageReader offsetStorageReader = this.context.offsetStorageReader();
             Map<String, Object> offsetFromCopycat = offsetStorageReader.offset(offsetKey());
             
+            // XXX Need an API to pass values to Maxwell. For now, do it the dumb
+            // way.
             String[] argv = new String[] {
-                    "--user=maxwell", 
-                    "--password=XXXXXX", 
-                    "--host=192.168.59.103"
+                    "--user=" + props.getProperty(FileStreamSourceConnector.USER_CONFIG), 
+                    "--password=" + props.getProperty(FileStreamSourceConnector.PASSWORD_CONFIG), 
+                    "--host=" + props.getProperty(FileStreamSourceConnector.HOST_CONFIG),
+                    "--port=" + props.getProperty(FileStreamSourceConnector.PORT_CONFIG)
             };
             this.config = new MaxwellConfig(argv);
 
@@ -134,7 +120,7 @@ public class FileStreamSourceTask extends SourceTask {
             } catch ( SQLException e ) {
                 LOGGER.error("Failed to connect to mysql server @ " + this.config.getConnectionURI());
                 LOGGER.error(e.getLocalizedMessage());
-                return;
+                throw e;
             }
             
             // TODO Auto-generated method stub
@@ -200,36 +186,6 @@ public class FileStreamSourceTask extends SourceTask {
         return null;
     }
 
-
-    private String extractLine() {
-        int until = -1, newStart = -1;
-        for (int i = 0; i < offset; i++) {
-            if (buffer[i] == '\n') {
-                until = i;
-                newStart = i + 1;
-                break;
-            } else if (buffer[i] == '\r') {
-                // We need to check for \r\n, so we must skip this if we can't check the next char
-                if (i + 1 >= offset)
-                    return null;
-
-                until = i;
-                newStart = (buffer[i + 1] == '\n') ? i + 2 : i + 1;
-                break;
-            }
-        }
-
-        if (until != -1) {
-            String result = new String(buffer, 0, until);
-            System.arraycopy(buffer, newStart, buffer, 0, buffer.length - newStart);
-            offset = offset - newStart;
-            if (streamOffset != null)
-                streamOffset += newStart;
-            return result;
-        } else {
-            return null;
-        }
-    }
 
     @Override
     public void stop() {

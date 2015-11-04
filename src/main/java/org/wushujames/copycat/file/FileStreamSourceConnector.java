@@ -30,21 +30,33 @@ import java.util.Properties;
  * sink modes via its 'mode' setting.
  */
 public class FileStreamSourceConnector extends SourceConnector {
-//    public static final String TOPIC_CONFIG = "topic";
-//    public static final String FILE_CONFIG = "file";
-//
-//    private String filename;
-//    private String topic;
+    public static final String HOST_CONFIG = "host";
+    public static final String USER_CONFIG = "user";
+    public static final String PASSWORD_CONFIG = "password";
+    public static final String PORT_CONFIG = "port";
+    
+    private String host;
+    private String user;
+    private String password;
+    private String port;
+    
 
     @Override
     public void start(Properties props) {
-//        filename = props.getProperty(FILE_CONFIG);
-//        topic = props.getProperty(TOPIC_CONFIG);
-//        if (topic == null || topic.isEmpty())
-//            throw new CopycatException("FileStreamSourceConnector configuration must include 'topic' setting");
-//        if (topic.contains(","))
-//            throw new CopycatException("FileStreamSourceConnector should only have a single topic when used as a source.");
-////        --user='maxwell' --password='XXXXXX' --host='192.168.59.103' --producer=stdout
+        host = props.getProperty(HOST_CONFIG);
+        user = props.getProperty(USER_CONFIG);
+        password = props.getProperty(PASSWORD_CONFIG);
+        port = props.getProperty(PORT_CONFIG);
+        
+        if (host == null || host.isEmpty()) {
+            throw new CopycatException("FileStreamSourceConnector configuration must include 'host' setting");
+        }
+        if (user == null || user.isEmpty()) {
+            throw new CopycatException("FileStreamSourceConnector configuration must include 'user' setting");
+        }
+        if (password == null || password.isEmpty()) {
+            throw new CopycatException("FileStreamSourceConnector configuration must include 'password' setting");
+        }
     }
 
     @Override
@@ -57,9 +69,10 @@ public class FileStreamSourceConnector extends SourceConnector {
         ArrayList<Properties> configs = new ArrayList<>();
         // Only one input stream makes sense.
         Properties config = new Properties();
-        config.setProperty("user", "maxwell");
-        config.setProperty("password", "XXXXXX");
-        config.setProperty("host","192.168.59.103");
+        config.setProperty("user", user);
+        config.setProperty("password", password);
+        config.setProperty("host", host);
+        config.setProperty("port", port);
         configs.add(config);
         return configs;
     }

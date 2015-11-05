@@ -17,14 +17,13 @@
 
 package org.wushujames.copycat.file;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -57,9 +56,9 @@ public class FileStreamSourceTask extends SourceTask {
     private static final Logger log = LoggerFactory.getLogger(FileStreamSourceTask.class);
     public static final String FILENAME_FIELD = "filename";
     public  static final String POSITION_FIELD = "position";
+    private static final Schema KEY_SCHEMA = Schema.STRING_SCHEMA;
     private static final Schema VALUE_SCHEMA = Schema.STRING_SCHEMA;
 
-    private InputStream stream;
     private com.zendesk.maxwell.schema.Schema schema;
     private MaxwellConfig config;
     private MaxwellContext maxwellContext;
@@ -71,7 +70,7 @@ public class FileStreamSourceTask extends SourceTask {
     public void start(Properties props) {
         try {
             OffsetStorageReader offsetStorageReader = this.context.offsetStorageReader();
-            Map<String, Object> offsetFromCopycat = offsetStorageReader.offset(offsetKey());
+            Map<String, Object> offsetFromCopycat = offsetStorageReader.offset(sourcePartition());
             
             // XXX Need an API to pass values to Maxwell. For now, do it the dumb
             // way.
@@ -167,14 +166,23 @@ public class FileStreamSourceTask extends SourceTask {
             String topicName = databaseName + "." + tableName;
             
             ArrayList<SourceRecord> records = new ArrayList<>();
-            SourceRecord rec;
-            for (String json : event.toJSONStrings()) {
+
+            Iterator<String> jsonIter = event.toJSONStrings().iterator();
+            Iterator<String> keysIter = event.getPKStrings().iterator();
+
+            while (jsonIter.hasNext() && keysIter.hasNext()) {
+                String json = jsonIter.next();
+                String key = keysIter.next();
+
                 System.out.print("got a maxwell event!");
                 System.out.println(json);
-                rec = new SourceRecord(
-                        offsetKey(), 
-                        offsetValue(event),
+                SourceRecord rec = new SourceRecord(
+                        sourcePartition(), 
+                        sourceOffset(event),
                         topicName, 
+                        null, //partition 
+                        KEY_SCHEMA,
+                        key,
                         VALUE_SCHEMA, 
                         json);
                 records.add(rec);
@@ -201,11 +209,11 @@ public class FileStreamSourceTask extends SourceTask {
         }
     }
 
-    private Map<String, String> offsetKey() {
+    private Map<String, String> sourcePartition() {
         return Collections.singletonMap("host", "192.168.59.103");
     }
 
-    private Map<String, Object> offsetValue(MaxwellAbstractRowsEvent event) {
+    private Map<String, Object> sourceOffset(MaxwellAbstractRowsEvent event) {
         Map<String, Object> m = new HashMap<String, Object>();
         m.put(POSITION_FIELD, event.getHeader().getNextPosition());
         m.put(FILENAME_FIELD, event.getBinlogFilename());

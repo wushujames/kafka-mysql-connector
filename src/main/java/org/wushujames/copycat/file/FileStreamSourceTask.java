@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.kafka.copycat.data.Schema;
+import org.apache.kafka.copycat.data.SchemaBuilder;
+import org.apache.kafka.copycat.data.Struct;
 import org.apache.kafka.copycat.errors.CopycatException;
 import org.apache.kafka.copycat.source.SourceRecord;
 import org.apache.kafka.copycat.source.SourceTask;
@@ -36,6 +38,8 @@ import org.apache.kafka.copycat.storage.OffsetStorageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.code.or.common.glossary.Column;
+import com.google.code.or.common.glossary.Row;
 import com.zendesk.maxwell.BinlogPosition;
 import com.zendesk.maxwell.Maxwell;
 import com.zendesk.maxwell.MaxwellAbstractRowsEvent;
@@ -46,6 +50,8 @@ import com.zendesk.maxwell.MaxwellMysqlStatus;
 import com.zendesk.maxwell.MaxwellReplicator;
 import com.zendesk.maxwell.schema.SchemaCapturer;
 import com.zendesk.maxwell.schema.SchemaStore;
+import com.zendesk.maxwell.schema.Table;
+import com.zendesk.maxwell.schema.columndef.ColumnDef;
 import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
 
 
@@ -167,12 +173,66 @@ public class FileStreamSourceTask extends SourceTask {
             
             ArrayList<SourceRecord> records = new ArrayList<>();
 
-            Iterator<String> jsonIter = event.toJSONStrings().iterator();
-            Iterator<String> keysIter = event.getPKStrings().iterator();
+            Table table = event.getTable();
+            
+            List<Row> rows = event.filteredRows();
+            // databaseName.tableName
+            SchemaBuilder pkBuilder = SchemaBuilder.struct().name(databaseName + "." + tableName);
 
-            while (jsonIter.hasNext() && keysIter.hasNext()) {
+            // create schema for primary key
+            for (String pk : table.getPKList()) {
+                int idx = table.findColumnIndex(pk);
+                ColumnDef def = table.getColumnList().get(idx);
+                
+                switch (def.getType()) {
+                case "bool":
+                case "boolean":
+                    pkBuilder.field(pk, Schema.BOOLEAN_SCHEMA);
+                    break;
+                case "bit":
+                case "tinyint":
+                    pkBuilder.field(pk, Schema.INT8_SCHEMA);
+                    break;
+                case "smallint":
+                    pkBuilder.field(pk, Schema.INT16_SCHEMA);
+                    break;
+                case "mediumint":
+                case "int":
+                    pkBuilder.field(pk, Schema.INT32_SCHEMA);
+                    break;
+                default:
+                    throw new RuntimeException("unsupported type");
+                }
+            }
+            Schema pkSchema = pkBuilder.build();
+            
+            List<Struct> primaryKeys = new ArrayList<Struct>();
+            
+            for (Row row : rows) {
+                // make primary key schema
+                Struct pkStruct = new Struct(pkSchema);
+
+                for (String pk : table.getPKList()) {
+                    int idx = table.findColumnIndex(pk);
+                    
+                    Column column = row.getColumns().get(idx);
+                    ColumnDef def = table.getColumnList().get(idx);
+
+                    // add to my key structure
+                    Long l = (Long) def.asJSON(column.getValue());
+                    pkStruct.put(pk, l.intValue());
+                }
+                primaryKeys.add(pkStruct);
+            }
+            
+            Iterator<String> jsonIter = event.toJSONStrings().iterator();
+//            Iterator<String> keysIter = event.getPKStrings().iterator();
+
+            Iterator<Struct> pkIter = primaryKeys.iterator();
+            
+            while (jsonIter.hasNext() && pkIter.hasNext()) {
                 String json = jsonIter.next();
-                String key = keysIter.next();
+                Struct key = pkIter.next();
 
                 System.out.print("got a maxwell event!");
                 System.out.println(json);
@@ -181,7 +241,7 @@ public class FileStreamSourceTask extends SourceTask {
                         sourceOffset(event),
                         topicName, 
                         null, //partition 
-                        KEY_SCHEMA,
+                        pkSchema,
                         key,
                         VALUE_SCHEMA, 
                         json);

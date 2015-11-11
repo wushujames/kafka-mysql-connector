@@ -15,7 +15,7 @@
 // * limitations under the License.
 // **/
 //
-//package org.wushujames.copycat.file;
+//package org.wushujames.connect.mysql;
 //
 //import org.apache.kafka.copycat.errors.CopycatException;
 //import org.apache.kafka.copycat.source.SourceRecord;

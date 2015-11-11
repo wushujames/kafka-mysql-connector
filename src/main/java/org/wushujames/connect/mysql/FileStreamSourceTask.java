@@ -15,7 +15,7 @@
  * limitations under the License.
  **/
 
-package org.wushujames.copycat.file;
+package org.wushujames.connect.mysql;
 
 import java.io.IOException;
 import java.sql.Connection;

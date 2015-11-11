@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: 'java-library-distribution'
-archivesBaseName = "copycat-file"
+archivesBaseName = "connect-mysql-source"
 
 repositories {
     mavenLocal()
@@ -34,7 +34,7 @@ test {
 }
 
 javadoc {
-    include "**/org/wushujames/copycat/*"
+    include "**/org/wushujames/connect/mysql/*"
 }
 
 artifacts {

@@ -13,7 +13,8 @@ By plugging in to the Kafka Connect framework, we are able to:
 - manage offsets in Kafka
 
 Status
-This code is still in progress.
+------
+This code is a work-in-progress.
 
 Instructions for building and running
 -------------------------------------

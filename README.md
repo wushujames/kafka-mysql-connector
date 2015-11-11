@@ -3,13 +3,13 @@ Kafka MySQL Connector
 kafka-mysql-connector is a plugin that allows you to easily replicate MySQL changes to Apache Kafka. It uses the fantastic [Maxwell](https://github.com/zendesk/maxwell) project to read MySQL binary logs in near-real time. It runs as a plugin within the [Kafka Connect](http://kafka.apache.org/090/documentation.html#connect) framework, which provides a standard way to ingest data into Kafka.
 
 By using Maxwell, we are able to:
-- replicate date from an unpatched MySQL server
-- Parses ALTER/CREATE/DROP table statements, which allows us to always have a correct view of the MySQL schema
+- replicate data from an unpatched MySQL server
+- Parse ALTER/CREATE/DROP table statements, which allows us to always have a correct view of the MySQL schema
 
 By plugging in to the Kafka Connect framework, we are able to:
 - benefit from standardized best practices for Kafka producers and consumers
 - run in distributed or standalone mode
-- manage the MySQL Kafka Connector via REST interfaces
+- manage the Kafka MySQL Connector via REST interfaces
 - manage offsets in Kafka
 
 Status
@@ -56,8 +56,8 @@ And it currently is built off of an older commit of Kafka trunk, so you will nee
 
 5.  Pull this repo down and build it and "install" it within the build directory.
     ```
-    $ git clone https://github.com/wushujames/mysql-kafka-connector mysql-kafka-connector
-    $ (cd mysql-kafka-connector && ./gradlew build installDist)
+    $ git clone https://github.com/wushujames/kafka-mysql-connector kafka-mysql-connector
+    $ (cd kafka-mysql-connector && ./gradlew build installDist)
     ```
 
 6.  Run zookeeper somehow.
@@ -79,8 +79,8 @@ And it currently is built off of an older commit of Kafka trunk, so you will nee
 
 10. Run Copycat with this connector, with the connector's files in the CLASSPATH.
     ```
-    $ export CLASSPATH=`pwd`/mysql-kafka-connector/build/install/mysql-kafka-connector/connect-mysql-source.jar:`pwd`/mysql-kafka-connector/build/install/mysql-kafka-connector/lib/*
-    $ kafka/bin/copycat-standalone.sh mysql-kafka-connector/copycat-standalone.properties  mysql-kafka-connector/connect-mysql-source.properties
+    $ export CLASSPATH=`pwd`/kafka-mysql-connector/build/install/kafka-mysql-connector/connect-mysql-source.jar:`pwd`/kafka-mysql-connector/build/install/kafka-mysql-connector/lib/*
+    $ kafka/bin/copycat-standalone.sh kafka-mysql-connector/copycat-standalone.properties  kafka-mysql-connector/connect-mysql-source.properties
     ```
 
 11. XXX Insert into mysql

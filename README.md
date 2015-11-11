@@ -80,7 +80,7 @@ And it currently is built off of an older commit of Kafka trunk, so you will nee
 10. Run Copycat with this connector, with the connector's files in the CLASSPATH.
     ```
     $ export CLASSPATH=`pwd`/mysql-kafka-connector/build/install/mysql-kafka-connector/copycat-file.jar:`pwd`/mysql-kafka-connector/build/install/mysql-kafka-connector/lib/*
-    $ kafka/bin/copycat-standalone.sh mysql-kafka-connector/copycat-standalone.properties  mysql-kafka-connector/copycat-standalone/copycat-file-source.properties
+    $ kafka/bin/copycat-standalone.sh mysql-kafka-connector/copycat-standalone.properties  mysql-kafka-connector/copycat-standalone/connect-mysql-source.properties
     ```
 
 11. XXX Insert into mysql

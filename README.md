@@ -16,6 +16,17 @@ Status
 ------
 This code is a work-in-progress.
 
+What's done:
+* Offsets stored in Kafka by the Kafka Connect framework
+* Data format is a string... which contains JSON. Which is stored within a JSON structure by Kafka Connect. Which means tons of escaped quotes.
+* Each table is written to its own topic. The Kafka primary key is the row's primary key.
+* It supports primary keys which are ints.
+
+What needs to be done:
+* Support primary keys of any SQL type
+* Add schema support for the rows, so that it isn't a JSON string
+* Testing.
+
 Instructions for building and running
 -------------------------------------
 For now, it uses a [forked](https://github.com/wushujames/maxwell/tree/wushujames/libraryize) version of Maxwell. I have spoken to Ben Osheroff, the author of Maxwell, and I will be contributing my changes back to the Maxwell project.

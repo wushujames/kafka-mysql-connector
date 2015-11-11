@@ -29,7 +29,7 @@ import java.util.Properties;
  * Very simple connector that works with the console. This connector supports both source and
  * sink modes via its 'mode' setting.
  */
-public class FileStreamSourceConnector extends SourceConnector {
+public class MySqlSourceConnector extends SourceConnector {
     public static final String HOST_CONFIG = "host";
     public static final String USER_CONFIG = "user";
     public static final String PASSWORD_CONFIG = "password";
@@ -49,19 +49,19 @@ public class FileStreamSourceConnector extends SourceConnector {
         port = props.getProperty(PORT_CONFIG);
         
         if (host == null || host.isEmpty()) {
-            throw new CopycatException("FileStreamSourceConnector configuration must include 'host' setting");
+            throw new CopycatException("MySqlSourceConnector configuration must include 'host' setting");
         }
         if (user == null || user.isEmpty()) {
-            throw new CopycatException("FileStreamSourceConnector configuration must include 'user' setting");
+            throw new CopycatException("MySqlSourceConnector configuration must include 'user' setting");
         }
         if (password == null || password.isEmpty()) {
-            throw new CopycatException("FileStreamSourceConnector configuration must include 'password' setting");
+            throw new CopycatException("MySqlSourceConnector configuration must include 'password' setting");
         }
     }
 
     @Override
     public Class<? extends Task> taskClass() {
-        return FileStreamSourceTask.class;
+        return MySqlSourceTask.class;
     }
 
     @Override
@@ -79,6 +79,6 @@ public class FileStreamSourceConnector extends SourceConnector {
 
     @Override
     public void stop() {
-        // Nothing to do since FileStreamSourceConnector has no background monitoring.
+        // Nothing to do since MySqlSourceConnector has no background monitoring.
     }
 }

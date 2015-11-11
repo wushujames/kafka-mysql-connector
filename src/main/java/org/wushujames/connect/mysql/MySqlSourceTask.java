@@ -56,10 +56,10 @@ import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
 
 
 /**
- * FileStreamSourceTask reads from stdin or a file.
+ * MySqlSourceTask reads from stdin or a file.
  */
-public class FileStreamSourceTask extends SourceTask {
-    private static final Logger log = LoggerFactory.getLogger(FileStreamSourceTask.class);
+public class MySqlSourceTask extends SourceTask {
+    private static final Logger log = LoggerFactory.getLogger(MySqlSourceTask.class);
     public static final String FILENAME_FIELD = "filename";
     public  static final String POSITION_FIELD = "position";
     private static final Schema KEY_SCHEMA = Schema.STRING_SCHEMA;
@@ -81,10 +81,10 @@ public class FileStreamSourceTask extends SourceTask {
             // XXX Need an API to pass values to Maxwell. For now, do it the dumb
             // way.
             String[] argv = new String[] {
-                    "--user=" + props.getProperty(FileStreamSourceConnector.USER_CONFIG), 
-                    "--password=" + props.getProperty(FileStreamSourceConnector.PASSWORD_CONFIG), 
-                    "--host=" + props.getProperty(FileStreamSourceConnector.HOST_CONFIG),
-                    "--port=" + props.getProperty(FileStreamSourceConnector.PORT_CONFIG)
+                    "--user=" + props.getProperty(MySqlSourceConnector.USER_CONFIG), 
+                    "--password=" + props.getProperty(MySqlSourceConnector.PASSWORD_CONFIG), 
+                    "--host=" + props.getProperty(MySqlSourceConnector.HOST_CONFIG),
+                    "--port=" + props.getProperty(MySqlSourceConnector.PORT_CONFIG)
             };
             this.config = new MaxwellConfig(argv);
 

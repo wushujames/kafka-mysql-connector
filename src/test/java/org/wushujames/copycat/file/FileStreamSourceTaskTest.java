@@ -44,7 +44,7 @@
 //    private File tempFile;
 //    private Properties config;
 //    private OffsetStorageReader offsetStorageReader;
-//    private FileStreamSourceTask task;
+//    private MySqlSourceTask task;
 //
 //    private boolean verifyMocks = false;
 //
@@ -52,9 +52,9 @@
 //    public void setup() throws IOException {
 //        tempFile = File.createTempFile("file-stream-source-task-test", null);
 //        config = new Properties();
-//        config.setProperty(FileStreamSourceConnector.FILE_CONFIG, tempFile.getAbsolutePath());
-//        config.setProperty(FileStreamSourceConnector.TOPIC_CONFIG, TOPIC);
-//        task = new FileStreamSourceTask();
+//        config.setProperty(MySqlSourceConnector.FILE_CONFIG, tempFile.getAbsolutePath());
+//        config.setProperty(MySqlSourceConnector.TOPIC_CONFIG, TOPIC);
+//        task = new MySqlSourceTask();
 //        offsetStorageReader = PowerMock.createMock(OffsetStorageReader.class);
 //        task.initialize(new SourceTaskContext(offsetStorageReader));
 //    }
@@ -90,8 +90,8 @@
 //        assertEquals(1, records.size());
 //        assertEquals(TOPIC, records.get(0).topic());
 //        assertEquals("partial line finished", records.get(0).value());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(0).sourcePartition());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.POSITION_FIELD, 22L), records.get(0).sourceOffset());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(0).sourcePartition());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.POSITION_FIELD, 22L), records.get(0).sourceOffset());
 //        assertEquals(null, task.poll());
 //
 //        // Different line endings, and make sure the final \r doesn't result in a line until we can
@@ -101,25 +101,25 @@
 //        records = task.poll();
 //        assertEquals(4, records.size());
 //        assertEquals("line1", records.get(0).value());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(0).sourcePartition());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.POSITION_FIELD, 28L), records.get(0).sourceOffset());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(0).sourcePartition());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.POSITION_FIELD, 28L), records.get(0).sourceOffset());
 //        assertEquals("line2", records.get(1).value());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(1).sourcePartition());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.POSITION_FIELD, 35L), records.get(1).sourceOffset());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(1).sourcePartition());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.POSITION_FIELD, 35L), records.get(1).sourceOffset());
 //        assertEquals("line3", records.get(2).value());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(2).sourcePartition());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.POSITION_FIELD, 41L), records.get(2).sourceOffset());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(2).sourcePartition());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.POSITION_FIELD, 41L), records.get(2).sourceOffset());
 //        assertEquals("line4", records.get(3).value());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(3).sourcePartition());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.POSITION_FIELD, 47L), records.get(3).sourceOffset());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(3).sourcePartition());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.POSITION_FIELD, 47L), records.get(3).sourceOffset());
 //
 //        os.write("subsequent text".getBytes());
 //        os.flush();
 //        records = task.poll();
 //        assertEquals(1, records.size());
 //        assertEquals("", records.get(0).value());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(0).sourcePartition());
-//        assertEquals(Collections.singletonMap(FileStreamSourceTask.POSITION_FIELD, 48L), records.get(0).sourceOffset());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.FILENAME_FIELD, tempFile.getAbsolutePath()), records.get(0).sourcePartition());
+//        assertEquals(Collections.singletonMap(MySqlSourceTask.POSITION_FIELD, 48L), records.get(0).sourceOffset());
 //
 //        task.stop();
 //    }
@@ -128,12 +128,12 @@
 //    public void testMissingTopic() throws InterruptedException {
 //        replay();
 //
-//        config.remove(FileStreamSourceConnector.TOPIC_CONFIG);
+//        config.remove(MySqlSourceConnector.TOPIC_CONFIG);
 //        task.start(config);
 //    }
 //
 //    public void testInvalidFile() throws InterruptedException {
-//        config.setProperty(FileStreamSourceConnector.FILE_CONFIG, "bogusfilename");
+//        config.setProperty(MySqlSourceConnector.FILE_CONFIG, "bogusfilename");
 //        task.start(config);
 //        // Currently the task retries indefinitely if the file isn't found, but shouldn't return any data.
 //        for (int i = 0; i < 100; i++)

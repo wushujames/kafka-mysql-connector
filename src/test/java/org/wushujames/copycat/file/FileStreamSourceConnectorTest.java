@@ -34,19 +34,19 @@
 //    private static final String MULTIPLE_TOPICS = "test1,test2";
 //    private static final String FILENAME = "/somefilename";
 //
-//    private FileStreamSourceConnector connector;
+//    private MySqlSourceConnector connector;
 //    private ConnectorContext ctx;
 //    private Properties sourceProperties;
 //
 //    @Before
 //    public void setup() {
-//        connector = new FileStreamSourceConnector();
+//        connector = new MySqlSourceConnector();
 //        ctx = PowerMock.createMock(ConnectorContext.class);
 //        connector.initialize(ctx);
 //
 //        sourceProperties = new Properties();
-//        sourceProperties.setProperty(FileStreamSourceConnector.TOPIC_CONFIG, SINGLE_TOPIC);
-//        sourceProperties.setProperty(FileStreamSourceConnector.FILE_CONFIG, FILENAME);
+//        sourceProperties.setProperty(MySqlSourceConnector.TOPIC_CONFIG, SINGLE_TOPIC);
+//        sourceProperties.setProperty(MySqlSourceConnector.FILE_CONFIG, FILENAME);
 //    }
 //
 //    @Test
@@ -57,17 +57,17 @@
 //        List<Properties> taskConfigs = connector.taskConfigs(1);
 //        assertEquals(1, taskConfigs.size());
 //        assertEquals(FILENAME,
-//                taskConfigs.get(0).getProperty(FileStreamSourceConnector.FILE_CONFIG));
+//                taskConfigs.get(0).getProperty(MySqlSourceConnector.FILE_CONFIG));
 //        assertEquals(SINGLE_TOPIC,
-//                taskConfigs.get(0).getProperty(FileStreamSourceConnector.TOPIC_CONFIG));
+//                taskConfigs.get(0).getProperty(MySqlSourceConnector.TOPIC_CONFIG));
 //
 //        // Should be able to return fewer than requested #
 //        taskConfigs = connector.taskConfigs(2);
 //        assertEquals(1, taskConfigs.size());
 //        assertEquals(FILENAME,
-//                taskConfigs.get(0).getProperty(FileStreamSourceConnector.FILE_CONFIG));
+//                taskConfigs.get(0).getProperty(MySqlSourceConnector.FILE_CONFIG));
 //        assertEquals(SINGLE_TOPIC,
-//                taskConfigs.get(0).getProperty(FileStreamSourceConnector.TOPIC_CONFIG));
+//                taskConfigs.get(0).getProperty(MySqlSourceConnector.TOPIC_CONFIG));
 //
 //        PowerMock.verifyAll();
 //    }
@@ -76,18 +76,18 @@
 //    public void testSourceTasksStdin() {
 //        PowerMock.replayAll();
 //
-//        sourceProperties.remove(FileStreamSourceConnector.FILE_CONFIG);
+//        sourceProperties.remove(MySqlSourceConnector.FILE_CONFIG);
 //        connector.start(sourceProperties);
 //        List<Properties> taskConfigs = connector.taskConfigs(1);
 //        assertEquals(1, taskConfigs.size());
-//        assertNull(taskConfigs.get(0).getProperty(FileStreamSourceConnector.FILE_CONFIG));
+//        assertNull(taskConfigs.get(0).getProperty(MySqlSourceConnector.FILE_CONFIG));
 //
 //        PowerMock.verifyAll();
 //    }
 //
 //    @Test(expected = CopycatException.class)
 //    public void testMultipleSourcesInvalid() {
-//        sourceProperties.setProperty(FileStreamSourceConnector.TOPIC_CONFIG, MULTIPLE_TOPICS);
+//        sourceProperties.setProperty(MySqlSourceConnector.TOPIC_CONFIG, MULTIPLE_TOPICS);
 //        connector.start(sourceProperties);
 //    }
 //
@@ -96,7 +96,7 @@
 //        PowerMock.replayAll();
 //
 //        connector.start(sourceProperties);
-//        assertEquals(FileStreamSourceTask.class, connector.taskClass());
+//        assertEquals(MySqlSourceTask.class, connector.taskClass());
 //
 //        PowerMock.verifyAll();
 //    }

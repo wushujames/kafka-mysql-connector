@@ -26,6 +26,8 @@ What needs to be done:
 * Support primary keys of any SQL type
 * Add schema support for the rows, so that it isn't a JSON string
 * Testing.
+* Packaging
+* Logging
 
 Instructions for building and running
 -------------------------------------

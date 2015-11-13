@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.kafka.copycat.data.Schema;
-import org.apache.kafka.copycat.data.SchemaBuilder;
 import org.apache.kafka.copycat.data.Struct;
 import org.apache.kafka.copycat.errors.CopycatException;
 import org.apache.kafka.copycat.source.SourceRecord;
@@ -178,35 +177,9 @@ public class MySqlSourceTask extends SourceTask {
             
             List<Row> rows = event.filteredRows();
             // databaseName.tableName
-            SchemaBuilder pkBuilder = SchemaBuilder.struct().name(databaseName + "." + tableName);
-
             // create schema for primary key
-            for (String pk : table.getPKList()) {
-                int idx = table.findColumnIndex(pk);
-                ColumnDef def = table.getColumnList().get(idx);
-                
-                switch (def.getType()) {
-                case "bool":
-                case "boolean":
-                    pkBuilder.field(pk, Schema.BOOLEAN_SCHEMA);
-                    break;
-                case "bit":
-                case "tinyint":
-                    pkBuilder.field(pk, Schema.INT8_SCHEMA);
-                    break;
-                case "smallint":
-                    pkBuilder.field(pk, Schema.INT16_SCHEMA);
-                    break;
-                case "mediumint":
-                case "int":
-                    pkBuilder.field(pk, Schema.INT32_SCHEMA);
-                    break;
-                default:
-                    throw new RuntimeException("unsupported type");
-                }
-            }
-            Schema pkSchema = pkBuilder.build();
-            
+            Schema pkSchema = DataConverter.convertPrimaryKeySchema(table);
+
             List<Struct> primaryKeys = new ArrayList<Struct>();
             
             for (Row row : rows) {

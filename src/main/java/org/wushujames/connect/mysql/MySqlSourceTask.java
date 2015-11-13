@@ -52,6 +52,7 @@ import com.zendesk.maxwell.schema.SchemaCapturer;
 import com.zendesk.maxwell.schema.SchemaStore;
 import com.zendesk.maxwell.schema.Table;
 import com.zendesk.maxwell.schema.columndef.ColumnDef;
+import com.zendesk.maxwell.schema.columndef.IntColumnDef;
 import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
 
 
@@ -218,9 +219,15 @@ public class MySqlSourceTask extends SourceTask {
                     Column column = row.getColumns().get(idx);
                     ColumnDef def = table.getColumnList().get(idx);
 
-                    // add to my key structure
-                    Long l = (Long) def.asJSON(column.getValue());
-                    pkStruct.put(pk, l.intValue());
+                    switch (def.getType()) {
+                    case "int":
+                        IntColumnDef intDef = (IntColumnDef) def;
+                        Long l = intDef.toLong(column.getValue());
+                        pkStruct.put(pk, l.intValue());
+                        break;
+                    default:
+                        throw new RuntimeException("unsupported type");
+                    }
                 }
                 primaryKeys.add(pkStruct);
             }

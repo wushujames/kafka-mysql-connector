@@ -19,7 +19,7 @@ public class DataConverter {
     public static Schema convertPrimaryKeySchema(Table table) {
         String tableName = table.getName();
         String databaseName = table.getDatabase().getName();
-        SchemaBuilder pkBuilder = SchemaBuilder.struct().name(databaseName + "." + tableName);
+        SchemaBuilder pkBuilder = SchemaBuilder.struct().name(databaseName + "." + tableName + ".pk");
 
         for (String pk : table.getPKList()) {
             int columnNumber = table.findColumnIndex(pk);
@@ -28,12 +28,24 @@ public class DataConverter {
         return pkBuilder.build();
     }
 
+    public static Schema convertRowSchema(Table table) {
+        String tableName = table.getName();
+        String databaseName = table.getDatabase().getName();
+        SchemaBuilder builder = SchemaBuilder.struct().name(databaseName + "." + tableName);
+
+        for (int columnNumber = 0; columnNumber < table.getColumnList().size(); columnNumber++) {
+            String columnName = table.getColumnList().get(columnNumber).getName();
+            addFieldSchema(table, columnNumber, columnName , builder);
+        }
+        return builder.build();
+    }
+
     private static void addFieldSchema(Table table, int columnNumber,
             String columnName, SchemaBuilder builder) {
         // TODO Auto-generated method stub
         ColumnDef def = table.getColumnList().get(columnNumber);
-        
-        switch (def.getType()) {
+        String type = def.getType();
+        switch (type) {
         case "bool":
         case "boolean":
             builder.field(columnName, Schema.BOOLEAN_SCHEMA);
@@ -48,6 +60,9 @@ public class DataConverter {
         case "mediumint":
         case "int":
             builder.field(columnName, Schema.INT32_SCHEMA);
+            break;
+        case "char":
+            builder.field(columnName, Schema.STRING_SCHEMA);
             break;
         default:
             throw new RuntimeException("unsupported type");

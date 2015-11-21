@@ -52,6 +52,7 @@ import com.zendesk.maxwell.schema.SchemaStore;
 import com.zendesk.maxwell.schema.Table;
 import com.zendesk.maxwell.schema.columndef.ColumnDef;
 import com.zendesk.maxwell.schema.columndef.IntColumnDef;
+import com.zendesk.maxwell.schema.columndef.StringColumnDef;
 import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
 
 
@@ -205,17 +206,46 @@ public class MySqlSourceTask extends SourceTask {
                 primaryKeys.add(pkStruct);
             }
             
-            Iterator<String> jsonIter = event.toJSONStrings().iterator();
-//            Iterator<String> keysIter = event.getPKStrings().iterator();
-
+            Iterator<Row> rowIter = rows.iterator();
             Iterator<Struct> pkIter = primaryKeys.iterator();
             
-            while (jsonIter.hasNext() && pkIter.hasNext()) {
-                String json = jsonIter.next();
+            while (rowIter.hasNext() && pkIter.hasNext()) {
+                Row row = rowIter.next();
+                
+                // create schema
+                Schema rowSchema = DataConverter.convertRowSchema(table);
+                
+                Struct rowStruct = new Struct(rowSchema);
+
+                for (int columnNumber = 0; columnNumber < table.getColumnList().size(); columnNumber++) {
+                    // XXX why is this lowercase??
+                    String columnName = table.getColumnList().get(columnNumber).getName();
+
+                    Column column = row.getColumns().get(columnNumber);
+                    ColumnDef def = table.getColumnList().get(columnNumber);
+
+                    String type = def.getType();
+                    switch (type) {
+                    case "int":
+                        IntColumnDef intDef = (IntColumnDef) def;
+                        Long l = intDef.toLong(column.getValue());
+                        rowStruct.put(columnName, l.intValue());
+                        break;
+                    case "char":
+                        StringColumnDef strDef = (StringColumnDef) def;
+                        String s = strDef.toString(column.getValue());
+                        rowStruct.put(columnName, s);
+                        break;
+                    default:
+                        throw new RuntimeException("unsupported type");
+                    }
+                }
+
+                
                 Struct key = pkIter.next();
 
                 System.out.print("got a maxwell event!");
-                System.out.println(json);
+                System.out.println(row);
                 SourceRecord rec = new SourceRecord(
                         sourcePartition(), 
                         sourceOffset(event),
@@ -223,8 +253,8 @@ public class MySqlSourceTask extends SourceTask {
                         null, //partition 
                         pkSchema,
                         key,
-                        VALUE_SCHEMA, 
-                        json);
+                        rowSchema,
+                        rowStruct);
                 records.add(rec);
             }
             return records;

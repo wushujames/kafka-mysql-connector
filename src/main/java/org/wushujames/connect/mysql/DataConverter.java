@@ -5,6 +5,7 @@ import org.apache.kafka.copycat.data.SchemaBuilder;
 
 import com.zendesk.maxwell.schema.Table;
 import com.zendesk.maxwell.schema.columndef.ColumnDef;
+import com.zendesk.maxwell.schema.columndef.ColumnType;
 
 /**
  * 
@@ -44,24 +45,23 @@ public class DataConverter {
             String columnName, SchemaBuilder builder) {
         // TODO Auto-generated method stub
         ColumnDef def = table.getColumnList().get(columnNumber);
-        String type = def.getType();
+        ColumnType type = def.getType();
         switch (type) {
-        case "bool":
-        case "boolean":
+        case BOOL:
+        case BOOLEAN:
             builder.field(columnName, Schema.BOOLEAN_SCHEMA);
             break;
-        case "bit":
-        case "tinyint":
+        case BIT:
             builder.field(columnName, Schema.INT8_SCHEMA);
             break;
-        case "smallint":
+        case SMALLINT:
             builder.field(columnName, Schema.INT16_SCHEMA);
             break;
-        case "mediumint":
-        case "int":
+        case MEDIUMINT:
+        case INT:
             builder.field(columnName, Schema.INT32_SCHEMA);
             break;
-        case "char":
+        case CHAR:
             builder.field(columnName, Schema.STRING_SCHEMA);
             break;
         default:

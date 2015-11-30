@@ -11,7 +11,7 @@ repositories {
 
 dependencies {
     compile "org.apache.kafka:copycat-api:0.9.0.0-SNAPSHOT"
-    compile "com.zendesk:maxwell:0.12.0"
+    compile "com.zendesk:maxwell:0.14.6"
     compile "org.slf4j:slf4j-api:1.7.6"
     
     testCompile "junit:junit:4.11"

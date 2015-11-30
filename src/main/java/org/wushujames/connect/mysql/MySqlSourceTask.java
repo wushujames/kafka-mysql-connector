@@ -51,6 +51,7 @@ import com.zendesk.maxwell.schema.SchemaCapturer;
 import com.zendesk.maxwell.schema.SchemaStore;
 import com.zendesk.maxwell.schema.Table;
 import com.zendesk.maxwell.schema.columndef.ColumnDef;
+import com.zendesk.maxwell.schema.columndef.ColumnType;
 import com.zendesk.maxwell.schema.columndef.IntColumnDef;
 import com.zendesk.maxwell.schema.columndef.StringColumnDef;
 import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
@@ -194,7 +195,7 @@ public class MySqlSourceTask extends SourceTask {
                     ColumnDef def = table.getColumnList().get(idx);
 
                     switch (def.getType()) {
-                    case "int":
+                    case INT:
                         IntColumnDef intDef = (IntColumnDef) def;
                         Long l = intDef.toLong(column.getValue());
                         pkStruct.put(pk, l.intValue());
@@ -224,14 +225,14 @@ public class MySqlSourceTask extends SourceTask {
                     Column column = row.getColumns().get(columnNumber);
                     ColumnDef def = table.getColumnList().get(columnNumber);
 
-                    String type = def.getType();
+                    ColumnType type = def.getType();
                     switch (type) {
-                    case "int":
+                    case INT:
                         IntColumnDef intDef = (IntColumnDef) def;
                         Long l = intDef.toLong(column.getValue());
                         rowStruct.put(columnName, l.intValue());
                         break;
-                    case "char":
+                    case CHAR:
                         StringColumnDef strDef = (StringColumnDef) def;
                         String s = strDef.toString(column.getValue());
                         rowStruct.put(columnName, s);

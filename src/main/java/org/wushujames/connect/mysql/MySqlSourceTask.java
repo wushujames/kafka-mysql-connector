@@ -37,7 +37,6 @@ import org.apache.kafka.copycat.storage.OffsetStorageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.code.or.common.glossary.Column;
 import com.google.code.or.common.glossary.Row;
 import com.zendesk.maxwell.BinlogPosition;
 import com.zendesk.maxwell.Maxwell;
@@ -50,10 +49,6 @@ import com.zendesk.maxwell.MaxwellReplicator;
 import com.zendesk.maxwell.schema.SchemaCapturer;
 import com.zendesk.maxwell.schema.SchemaStore;
 import com.zendesk.maxwell.schema.Table;
-import com.zendesk.maxwell.schema.columndef.ColumnDef;
-import com.zendesk.maxwell.schema.columndef.ColumnType;
-import com.zendesk.maxwell.schema.columndef.IntColumnDef;
-import com.zendesk.maxwell.schema.columndef.StringColumnDef;
 import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
 
 
@@ -186,24 +181,7 @@ public class MySqlSourceTask extends SourceTask {
             
             for (Row row : rows) {
                 // make primary key schema
-                Struct pkStruct = new Struct(pkSchema);
-
-                for (String pk : table.getPKList()) {
-                    int idx = table.findColumnIndex(pk);
-                    
-                    Column column = row.getColumns().get(idx);
-                    ColumnDef def = table.getColumnList().get(idx);
-
-                    switch (def.getType()) {
-                    case INT:
-                        IntColumnDef intDef = (IntColumnDef) def;
-                        Long l = intDef.toLong(column.getValue());
-                        pkStruct.put(pk, l.intValue());
-                        break;
-                    default:
-                        throw new RuntimeException("unsupported type");
-                    }
-                }
+                Struct pkStruct = DataConverter.convertPrimaryKeyData(pkSchema, table, row);
                 primaryKeys.add(pkStruct);
             }
             
@@ -216,31 +194,7 @@ public class MySqlSourceTask extends SourceTask {
                 // create schema
                 Schema rowSchema = DataConverter.convertRowSchema(table);
                 
-                Struct rowStruct = new Struct(rowSchema);
-
-                for (int columnNumber = 0; columnNumber < table.getColumnList().size(); columnNumber++) {
-                    // XXX why is this lowercase??
-                    String columnName = table.getColumnList().get(columnNumber).getName();
-
-                    Column column = row.getColumns().get(columnNumber);
-                    ColumnDef def = table.getColumnList().get(columnNumber);
-
-                    ColumnType type = def.getType();
-                    switch (type) {
-                    case INT:
-                        IntColumnDef intDef = (IntColumnDef) def;
-                        Long l = intDef.toLong(column.getValue());
-                        rowStruct.put(columnName, l.intValue());
-                        break;
-                    case CHAR:
-                        StringColumnDef strDef = (StringColumnDef) def;
-                        String s = strDef.toString(column.getValue());
-                        rowStruct.put(columnName, s);
-                        break;
-                    default:
-                        throw new RuntimeException("unsupported type");
-                    }
-                }
+                Struct rowStruct = DataConverter.convertRowData(rowSchema, table, row);
 
                 
                 Struct key = pkIter.next();
@@ -268,8 +222,7 @@ public class MySqlSourceTask extends SourceTask {
         return null;
     }
 
-
-    @Override
+	@Override
     public void stop() {
         log.trace("Stopping");
         try {

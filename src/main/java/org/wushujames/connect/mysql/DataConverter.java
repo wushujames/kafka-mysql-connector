@@ -1,5 +1,7 @@
 package org.wushujames.connect.mysql;
 
+import java.math.BigInteger;
+
 import org.apache.kafka.copycat.data.Schema;
 import org.apache.kafka.copycat.data.SchemaBuilder;
 import org.apache.kafka.copycat.data.Struct;
@@ -7,6 +9,7 @@ import org.apache.kafka.copycat.data.Struct;
 import com.google.code.or.common.glossary.Column;
 import com.google.code.or.common.glossary.Row;
 import com.zendesk.maxwell.schema.Table;
+import com.zendesk.maxwell.schema.columndef.BigIntColumnDef;
 import com.zendesk.maxwell.schema.columndef.ColumnDef;
 import com.zendesk.maxwell.schema.columndef.ColumnType;
 import com.zendesk.maxwell.schema.columndef.IntColumnDef;
@@ -52,22 +55,14 @@ public class DataConverter {
         String columnName = def.getName();
         ColumnType type = def.getType();
         switch (type) {
-        case BOOL:
-        case BOOLEAN:
-            builder.field(columnName, Schema.BOOLEAN_SCHEMA);
-            break;
-        case BIT:
-            builder.field(columnName, Schema.INT8_SCHEMA);
-            break;
-        case SMALLINT:
-            builder.field(columnName, Schema.INT16_SCHEMA);
-            break;
-        case MEDIUMINT:
         case INT:
             builder.field(columnName, Schema.INT32_SCHEMA);
             break;
         case CHAR:
             builder.field(columnName, Schema.STRING_SCHEMA);
+            break;
+        case BIGINT:
+            builder.field(columnName, Schema.INT64_SCHEMA);
             break;
         default:
             throw new RuntimeException("unsupported type");
@@ -102,6 +97,12 @@ public class DataConverter {
 		    String s = strDef.toString(column.getValue());
 		    struct.put(columnDef.getName(), s);
 		    break;
+        case BIGINT:
+		    BigIntColumnDef bigIntDef = (BigIntColumnDef) columnDef;
+		    BigInteger bigInt = bigIntDef.toNumeric(column.getValue());
+		    struct.put(columnDef.getName(), bigInt.longValue());
+            break;
+
 		default:
 		    throw new RuntimeException("unsupported type");
 		}

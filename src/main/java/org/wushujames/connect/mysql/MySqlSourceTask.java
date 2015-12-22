@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.kafka.copycat.data.Schema;
-import org.apache.kafka.copycat.data.Struct;
-import org.apache.kafka.copycat.errors.CopycatException;
-import org.apache.kafka.copycat.source.SourceRecord;
-import org.apache.kafka.copycat.source.SourceTask;
-import org.apache.kafka.copycat.storage.OffsetStorageReader;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.source.SourceRecord;
+import org.apache.kafka.connect.source.SourceTask;
+import org.apache.kafka.connect.storage.OffsetStorageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,7 @@ public class MySqlSourceTask extends SourceTask {
 
     
     @Override
-    public void start(Properties props) {
+    public void start(Map<String, String> props) {
         try {
             OffsetStorageReader offsetStorageReader = this.context.offsetStorageReader();
             Map<String, Object> offsetFromCopycat = offsetStorageReader.offset(sourcePartition());
@@ -78,10 +78,10 @@ public class MySqlSourceTask extends SourceTask {
             // XXX Need an API to pass values to Maxwell. For now, do it the dumb
             // way.
             String[] argv = new String[] {
-                    "--user=" + props.getProperty(MySqlSourceConnector.USER_CONFIG), 
-                    "--password=" + props.getProperty(MySqlSourceConnector.PASSWORD_CONFIG), 
-                    "--host=" + props.getProperty(MySqlSourceConnector.HOST_CONFIG),
-                    "--port=" + props.getProperty(MySqlSourceConnector.PORT_CONFIG)
+                    "--user=" + props.get(MySqlSourceConnector.USER_CONFIG), 
+                    "--password=" + props.get(MySqlSourceConnector.PASSWORD_CONFIG), 
+                    "--host=" + props.get(MySqlSourceConnector.HOST_CONFIG),
+                    "--port=" + props.get(MySqlSourceConnector.PORT_CONFIG)
             };
             this.config = new MaxwellConfig(argv);
 
@@ -130,7 +130,7 @@ public class MySqlSourceTask extends SourceTask {
             this.replicator.beforeStart(); // starts open replicator
             
         } catch (Exception e) {
-            throw new CopycatException("Error Initializing Maxwell", e);
+            throw new ConnectException("Error Initializing Maxwell", e);
         }
     }
 
@@ -243,5 +243,10 @@ public class MySqlSourceTask extends SourceTask {
         m.put(FILENAME_FIELD, event.getBinlogFilename());
         
         return m;
+    }
+
+    @Override
+    public String version() {
+        return new MySqlSourceConnector().version();
     }
 }

@@ -33,58 +33,84 @@ Instructions for building and running
 -------------------------------------
 For now, it uses a [forked](https://github.com/wushujames/maxwell/tree/wushujames/libraryize) version of Maxwell. I have spoken to Ben Osheroff, the author of Maxwell, and I will be contributing my changes back to the Maxwell project.
 
-And it currently is built off of an older commit of Kafka trunk, so you will need to download and build kafka as well. I will update this to be based off of Kafka trunk soon. When Apache Kafka 0.9.0 is released, then I will use the published jars and will not need to build the tree ourselves.
-
-1.  Pull down Kafka trunk
-    ```
-    $ git clone https://github.com/apache/kafka kafka
-    $ (cd kafka && git checkout 6f2f1f9)
-    ```
-
-2.  Build kafka and place jars in local maven repo
-    ```
-    $ (cd kafka && gradle wrapper && ./gradlew install)
-    ```
-
-3.  Pull down my Maxwell fork.
+1.  Pull down my Maxwell fork.
     ```
     $ git clone https://github.com/wushujames/maxwell.git maxwell
     ```
 
-4.  Build my Maxwell fork (which is in a branch called wushujames/libraryize) and place jars in local maven repo
+2.  Build my Maxwell fork (which is in a branch called wushujames/libraryize) and place jars in local maven repo
     ```
     $ (cd maxwell && git checkout wushujames/libraryize && mvn install)
     ```
 
-5.  Pull this repo down and build it and "install" it within the build directory.
+3.  Pull this repo down and build it and "install" it within the build directory.
     ```
     $ git clone https://github.com/wushujames/kafka-mysql-connector kafka-mysql-connector
     $ (cd kafka-mysql-connector && ./gradlew build installDist)
     ```
 
-6.  Run zookeeper somehow.
+4.  Run zookeeper somehow.
     ```
     Here are instructions on how to run it using docker.
     $ docker run -d --name zookeeper -p 2181:2181 confluent/zookeeper
     ```
     
-7.  Run the trunk version of Kafka.
+5.  Download and run kafka 0.9.0 locally by following the instructions at http://kafka.apache.org/documentation.html#quickstart
     ```
-    $ (cd kafka && ./bin/kafka-server-start.sh config/server.properties)
+    $ curl -o kafka_2.11-0.9.0.0.tgz http://www.us.apache.org/dist/kafka/0.9.0.0/kafka_2.11-0.9.0.0.tgz
+    $ tar xvfz kafka_2.11-0.9.0.0.tgz
+    $ cd kafka_2.11-0.9.0.0
+    $ ./bin/kafka-server-start.sh config/server.properties
     ```
 
-8.  XXX Start up and configure mysql properly.
+6.  Start up and configure mysql properly. (This is horribly ugly. I will clean it up at some point, but wanted to get something usable out).
+    ```
+    docker run --name mariadb -e MYSQL_ROOT_PASSWORD=passwd -p 3306:3306 -d mariadb:5.5
+    docker exec -it mariadb bash
 
+    cat << EOF > /etc/mysql/conf.d/skip-name-resolve.cnf
+    [mysqld]
+    skip-host-cache
+    skip-name-resolve
+    EOF
 
-9.  XXX Configure connector, pointing to your mysql instance
+    cat << EOF > /etc/mysql/conf.d/binlog.cnf
+    [mysqld]
+    server-id=1
+    log-bin=master
+    binlog_format=row
+    EOF
 
+    exit
 
-10. Run Copycat with this connector, with the connector's files in the CLASSPATH.
+    docker stop mariadb
+    docker start mariadb
+
+    mysql -v --protocol=tcp --host=192.168.59.103 --user=root --password=passwd
+
+    GRANT SELECT, REPLICATION CLIENT, REPLICATION SLAVE on *.* to 'maxwell'@'%' identified by 'XXXXXX';
+    GRANT ALL on maxwell.* to 'maxwell'@'%';
+    ```
+
+7.  Configure connector, pointing to your mysql instance. (See connect-mysql-source.properties)
+
+8.  Run Copycat with this connector, with the connector's files in the CLASSPATH.
     ```
     $ export CLASSPATH=`pwd`/kafka-mysql-connector/build/install/kafka-mysql-connector/connect-mysql-source.jar:`pwd`/kafka-mysql-connector/build/install/kafka-mysql-connector/lib/*
-    $ kafka/bin/copycat-standalone.sh kafka-mysql-connector/copycat-standalone.properties  kafka-mysql-connector/connect-mysql-source.properties
+    $ kafka_2.11-0.9.0.0/bin/connect-standalone.sh kafka-mysql-connector/copycat-standalone.properties  kafka-mysql-connector/connect-mysql-source.properties
     ```
 
-11. XXX Insert into mysql
+9.  Insert into mysql
+    ```
+    $ mysql -v --protocol=tcp --host=192.168.59.103 --user=root --password=passwd
+    MariaDB [(none)]> create database test;
+    MariaDB [(none)]> create table test.users (userId int auto_increment primary key, name char(128));
+    MariaDB [(none)]> insert into test.users (name) values ("James");
+    ```
 
-12. XXX Read out of kafka
+
+10. Read the data out from the kafka topic named 'test.users'. The name of the topic correponds to the name of the database.table you inserted into.
+    ```
+    $ kafka_2.11-0.9.0.0/bin/kafka-console-consumer.sh  --zookeeper localhost:2181 --topic test.users --from-beginning
+    {"schema":{"type":"struct","fields":[{"type":"int32","optional":false,"field":"userid"},{"type":"string","optional":false,"field":"name"}],"optional":false,"name":"test.users"},"payload":{"userid":1,"name":"James"}}
+    ```

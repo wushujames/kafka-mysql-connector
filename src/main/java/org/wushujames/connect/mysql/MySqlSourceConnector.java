@@ -17,12 +17,15 @@
 
 package org.wushujames.connect.mysql;
 
-import org.apache.kafka.copycat.connector.Task;
-import org.apache.kafka.copycat.errors.CopycatException;
-import org.apache.kafka.copycat.source.SourceConnector;
+import org.apache.kafka.common.utils.AppInfoParser;
+import org.apache.kafka.connect.connector.Task;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.source.SourceConnector;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -42,20 +45,20 @@ public class MySqlSourceConnector extends SourceConnector {
     
 
     @Override
-    public void start(Properties props) {
-        host = props.getProperty(HOST_CONFIG);
-        user = props.getProperty(USER_CONFIG);
-        password = props.getProperty(PASSWORD_CONFIG);
-        port = props.getProperty(PORT_CONFIG);
+    public void start(Map<String, String> props) {
+        host = props.get(HOST_CONFIG);
+        user = props.get(USER_CONFIG);
+        password = props.get(PASSWORD_CONFIG);
+        port = props.get(PORT_CONFIG);
         
         if (host == null || host.isEmpty()) {
-            throw new CopycatException("MySqlSourceConnector configuration must include 'host' setting");
+            throw new ConnectException("MySqlSourceConnector configuration must include 'host' setting");
         }
         if (user == null || user.isEmpty()) {
-            throw new CopycatException("MySqlSourceConnector configuration must include 'user' setting");
+            throw new ConnectException("MySqlSourceConnector configuration must include 'user' setting");
         }
         if (password == null || password.isEmpty()) {
-            throw new CopycatException("MySqlSourceConnector configuration must include 'password' setting");
+            throw new ConnectException("MySqlSourceConnector configuration must include 'password' setting");
         }
     }
 
@@ -65,14 +68,14 @@ public class MySqlSourceConnector extends SourceConnector {
     }
 
     @Override
-    public List<Properties> taskConfigs(int maxTasks) {
-        ArrayList<Properties> configs = new ArrayList<>();
+    public List<Map<String, String>> taskConfigs(int maxTasks) {
+        ArrayList<Map<String, String>> configs = new ArrayList<>();
         // Only one input stream makes sense.
-        Properties config = new Properties();
-        config.setProperty("user", user);
-        config.setProperty("password", password);
-        config.setProperty("host", host);
-        config.setProperty("port", port);
+        Map<String, String> config = new HashMap<>();
+        config.put("user", user);
+        config.put("password", password);
+        config.put("host", host);
+        config.put("port", port);
         configs.add(config);
         return configs;
     }
@@ -80,5 +83,10 @@ public class MySqlSourceConnector extends SourceConnector {
     @Override
     public void stop() {
         // Nothing to do since MySqlSourceConnector has no background monitoring.
+    }
+
+    @Override
+    public String version() {
+        return AppInfoParser.getVersion();
     }
 }

@@ -2,9 +2,9 @@ package org.wushujames.connect.mysql;
 
 import java.math.BigInteger;
 
-import org.apache.kafka.copycat.data.Schema;
-import org.apache.kafka.copycat.data.SchemaBuilder;
-import org.apache.kafka.copycat.data.Struct;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
+import org.apache.kafka.connect.data.Struct;
 
 import com.google.code.or.common.glossary.Column;
 import com.google.code.or.common.glossary.Row;

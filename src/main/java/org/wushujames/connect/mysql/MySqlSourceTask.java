@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
@@ -57,10 +56,8 @@ import com.zendesk.maxwell.schema.ddl.SchemaSyncError;
  */
 public class MySqlSourceTask extends SourceTask {
     private static final Logger log = LoggerFactory.getLogger(MySqlSourceTask.class);
-    public static final String FILENAME_FIELD = "filename";
-    public  static final String POSITION_FIELD = "position";
-    private static final Schema KEY_SCHEMA = Schema.STRING_SCHEMA;
-    private static final Schema VALUE_SCHEMA = Schema.STRING_SCHEMA;
+    private static final String FILENAME_FIELD = "filename";
+    private static final String POSITION_FIELD = "position";
 
     private com.zendesk.maxwell.schema.Schema schema;
     private MaxwellConfig config;

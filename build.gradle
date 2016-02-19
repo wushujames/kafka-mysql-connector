@@ -18,7 +18,8 @@ dependencies {
     testCompile "org.easymock:easymock:3.3.1"
     testCompile "org.powermock:powermock-module-junit4:1.6.2"
     testCompile "org.powermock:powermock-api-easymock:1.6.2"
-    testRuntime "org.slf4j:slf4j-log4j12:1.7.6"
+    //    testRuntime "org.slf4j:slf4j-log4j12:1.7.6"
+    testRuntime "org.slf4j:log4j-over-slf4j:1.7.6"
 }
 
 task testJar(type: Jar) {

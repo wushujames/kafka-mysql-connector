@@ -83,6 +83,9 @@ public class MySqlSourceTaskTest {
 
     @Test
     public void testBigint() throws InterruptedException, IOException, SQLException {
+        // add tests for boundary conditions
+        // add tests for signed, unsigned
+        // http://dev.mysql.com/doc/refman/5.7/en/integer-types.html
         String insertSql = "insert into test.users (bigintcol) values (1844674407370955160);";
         
         testSchemaType("bigintcol", "bigint", Schema.INT64_SCHEMA, 1844674407370955160L, insertSql);

@@ -72,6 +72,16 @@ public class MySqlSourceTaskTest {
     }
 
     @Test
+    public void testTinyInt() throws InterruptedException, IOException, SQLException {
+        String insertSql = "insert into test.users (tinyintcol) values (1);";
+        
+        testSchemaType("tinyintcol", "tinyint", Schema.INT16_SCHEMA, (short) 1, insertSql);
+        // add tests for signed, unsigned
+        // boundary tests -127 to 128, 0 to 255
+        // http://dev.mysql.com/doc/refman/5.7/en/integer-types.html
+    }
+
+    @Test
     public void testBigint() throws InterruptedException, IOException, SQLException {
         String insertSql = "insert into test.users (bigintcol) values (1844674407370955160);";
         
@@ -138,10 +148,10 @@ public class MySqlSourceTaskTest {
         List<SourceRecord> records = null;
         while (true) {
             records = task.poll();
-            if (records != null) {
+            if (records.size() > 0) {
                 break;
             } else {
-                System.out.println("null from poll");
+                System.out.println("poll returned no records");
             }
         }
         return records;

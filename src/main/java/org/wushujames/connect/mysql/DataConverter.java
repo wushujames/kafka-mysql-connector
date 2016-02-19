@@ -55,6 +55,9 @@ public class DataConverter {
         String columnName = def.getName();
         ColumnType type = def.getType();
         switch (type) {
+        case TINYINT:
+            builder.field(columnName, Schema.INT16_SCHEMA);
+            break;
         case INT:
             builder.field(columnName, Schema.INT32_SCHEMA);
             break;
@@ -86,21 +89,29 @@ public class DataConverter {
 
     private static void addFieldData(Struct struct, ColumnDef columnDef,
             Column column) {
-        switch (columnDef.getType()) {
+        ColumnType type = columnDef.getType();
+        String columnName = columnDef.getName();
+        Object columnValue = column.getValue();
+        switch (type) {
+        case TINYINT:
+            IntColumnDef shortIntDef = (IntColumnDef) columnDef;
+            Long l1 = shortIntDef.toLong(columnValue);
+            struct.put(columnName, l1.shortValue());
+            break;
         case INT:
             IntColumnDef intDef = (IntColumnDef) columnDef;
-            Long l = intDef.toLong(column.getValue());
-            struct.put(columnDef.getName(), l.intValue());
+            Long l2 = intDef.toLong(columnValue);
+            struct.put(columnName, l2.intValue());
             break;
         case CHAR:
             StringColumnDef strDef = (StringColumnDef) columnDef;
-            String s = strDef.toString(column.getValue());
-            struct.put(columnDef.getName(), s);
+            String s = strDef.toString(columnValue);
+            struct.put(columnName, s);
             break;
         case BIGINT:
             BigIntColumnDef bigIntDef = (BigIntColumnDef) columnDef;
-            BigInteger bigInt = bigIntDef.toNumeric(column.getValue());
-            struct.put(columnDef.getName(), bigInt.longValue());
+            BigInteger bigInt = bigIntDef.toNumeric(columnValue);
+            struct.put(columnName, bigInt.longValue());
             break;
 
         default:

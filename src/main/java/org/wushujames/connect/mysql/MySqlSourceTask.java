@@ -147,76 +147,82 @@ public class MySqlSourceTask extends SourceTask {
     
     @Override
     public List<SourceRecord> poll() throws InterruptedException {
+        ArrayList<SourceRecord> records = new ArrayList<>();
 
+        MaxwellAbstractRowsEvent event;
         try {
-            MaxwellAbstractRowsEvent event = replicator.getEvent();
-            this.maxwellContext.ensurePositionThread();
-
-            if (event == null) {
-                return null;
-            }
-
-            if (event.getTable().getDatabase().getName().equals("maxwell")) {
-                return null;
-            }
-
-            String databaseName = event.getDatabase().getName();
-            String tableName = event.getTable().getName();
-            
-            String topicName = databaseName + "." + tableName;
-            
-            ArrayList<SourceRecord> records = new ArrayList<>();
-
-            Table table = event.getTable();
-            
-            List<Row> rows = event.filteredRows();
-            // databaseName.tableName
-            // create schema for primary key
-            Schema pkSchema = DataConverter.convertPrimaryKeySchema(table);
-
-            List<Struct> primaryKeys = new ArrayList<Struct>();
-            
-            for (Row row : rows) {
-                // make primary key schema
-                Struct pkStruct = DataConverter.convertPrimaryKeyData(pkSchema, table, row);
-                primaryKeys.add(pkStruct);
-            }
-            
-            Iterator<Row> rowIter = rows.iterator();
-            Iterator<Struct> pkIter = primaryKeys.iterator();
-            
-            while (rowIter.hasNext() && pkIter.hasNext()) {
-                Row row = rowIter.next();
-                
-                // create schema
-                Schema rowSchema = DataConverter.convertRowSchema(table);
-                
-                Struct rowStruct = DataConverter.convertRowData(rowSchema, table, row);
-
-                
-                Struct key = pkIter.next();
-
-                System.out.print("got a maxwell event!");
-                System.out.println(row);
-                SourceRecord rec = new SourceRecord(
-                        sourcePartition(), 
-                        sourceOffset(event),
-                        topicName, 
-                        null, //partition 
-                        pkSchema,
-                        key,
-                        rowSchema,
-                        rowStruct);
-                records.add(rec);
-            }
-            return records;
-
-            //return records;
+            event = replicator.getEvent();
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return records;
         }
-        return null;
+        try {
+            this.maxwellContext.ensurePositionThread();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return records;
+        }
+
+        if (event == null) {
+            return records;
+        }
+
+        if (event.getTable().getDatabase().getName().equals("maxwell")) {
+            return records;
+        }
+
+        String databaseName = event.getDatabase().getName();
+        String tableName = event.getTable().getName();
+
+        String topicName = databaseName + "." + tableName;
+
+
+        Table table = event.getTable();
+
+        List<Row> rows = event.filteredRows();
+        // databaseName.tableName
+        // create schema for primary key
+        Schema pkSchema = DataConverter.convertPrimaryKeySchema(table);
+
+        List<Struct> primaryKeys = new ArrayList<Struct>();
+
+        for (Row row : rows) {
+            // make primary key schema
+            Struct pkStruct = DataConverter.convertPrimaryKeyData(pkSchema, table, row);
+            primaryKeys.add(pkStruct);
+        }
+
+        Iterator<Row> rowIter = rows.iterator();
+        Iterator<Struct> pkIter = primaryKeys.iterator();
+
+        while (rowIter.hasNext() && pkIter.hasNext()) {
+            Row row = rowIter.next();
+
+            // create schema
+            Schema rowSchema = DataConverter.convertRowSchema(table);
+
+            Struct rowStruct = DataConverter.convertRowData(rowSchema, table, row);
+
+
+            Struct key = pkIter.next();
+
+            System.out.print("got a maxwell event!");
+            System.out.println(row);
+            SourceRecord rec = new SourceRecord(
+                    sourcePartition(), 
+                    sourceOffset(event),
+                    topicName, 
+                    null, //partition 
+                    pkSchema,
+                    key,
+                    rowSchema,
+                    rowStruct);
+            records.add(rec);
+        }
+        return records;
+
     }
 
 	@Override

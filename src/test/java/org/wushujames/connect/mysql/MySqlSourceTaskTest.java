@@ -65,16 +65,34 @@ public class MySqlSourceTaskTest {
     }
 
     @Test
-    public void testNormalLifecycle() throws InterruptedException, IOException, SQLException {
+    public void testChar() throws InterruptedException, IOException, SQLException {
+        String insertSql = "insert into test.users (name) values (\"James\");";
+        
+        testSchemaType("name", "char(128)", Schema.STRING_SCHEMA, "James", insertSql);
+    }
+
+    @Test
+    public void testBigint() throws InterruptedException, IOException, SQLException {
+        String insertSql = "insert into test.users (bigintcol) values (1844674407370955160);";
+        
+        testSchemaType("bigintcol", "bigint", Schema.INT64_SCHEMA, 1844674407370955160L, insertSql);
+    }
+
+    private void testSchemaType(String sqlFieldName, String sqlFieldType, Schema expectedValueSchema,
+            Object expectedValue, String insertSql) throws SQLException, InterruptedException {
         expectOffsetLookupReturnNone();
         replay();
         
         task.start(config);
 
         runSql("create database test");
-        runSql("create table test.users (userId int auto_increment primary key, name char(128))");
+        runSql("create table test.users (userId int auto_increment primary key)");
+        runSql(String.format("alter table test.users add column %s %s",
+                sqlFieldName,
+                sqlFieldType
+                ));
         
-        runSql("insert into test.users (name) values (\"James\");");
+        runSql(insertSql);
         List<SourceRecord> records = pollUntilRows();
         assertEquals(1, records.size());
         SourceRecord james = records.get(0);
@@ -96,15 +114,15 @@ public class MySqlSourceTaskTest {
         assertEquals(2, valueSchema.fields().size());
         assertNotNull(valueSchema.field("userid"));
         assertEquals(Schema.INT32_SCHEMA, valueSchema.field("userid").schema());
-        assertNotNull(valueSchema.field("name"));
-        assertEquals(Schema.STRING_SCHEMA, valueSchema.field("name").schema());
+        assertNotNull(valueSchema.field(sqlFieldName));
+        assertEquals(expectedValueSchema, valueSchema.field(sqlFieldName).schema());
         
         // check value
         Object valueObject = james.value();
         assertTrue(valueObject instanceof Struct);
         Struct value = (Struct) valueObject;
         assertEquals(1, value.get("userid"));
-        assertEquals("James", value.get("name"));
+        assertEquals(expectedValue, value.get(sqlFieldName));
     }
 
     private void expectOffsetLookupReturnNone() {

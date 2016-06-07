@@ -8,6 +8,8 @@ Kafka MySQL Connector
 
 **- For a MySQL->Kafka solution that is a standalone application, check out the excellent [Maxwell](http://maxwells-daemon.io) project, upon which this connector was based.**
 
+**Thank you for your support!**
+
 ---
 
 kafka-mysql-connector is a plugin that allows you to easily replicate MySQL changes to Apache Kafka. It uses the fantastic [Maxwell](https://github.com/zendesk/maxwell) project to read MySQL binary logs in near-real time. It runs as a plugin within the [Kafka Connect](http://kafka.apache.org/090/documentation.html#connect) framework, which provides a standard way to ingest data into Kafka.

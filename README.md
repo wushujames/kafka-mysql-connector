@@ -2,9 +2,11 @@ Kafka MySQL Connector
 
 **I am stopping development on this connector.**
 
-**For a Kafka Connect based solution, check out the excellent [Debezium](http://debezium.io) project.**
+**Here are two alternatives:**
 
-**For a standalone MySQL->Kafka daemon solution, check out the excellent [Maxwell](http://maxwells-daemon.io) project, upon which this connector was based.**
+**- For a MySQL->Kafka solution based on Kafka Connect, check out the excellent [Debezium](http://debezium.io) project.**
+
+**- For a MySQL->Kafka solution that is a standalone application, check out the excellent [Maxwell](http://maxwells-daemon.io) project, upon which this connector was based.**
 
 ---
 
